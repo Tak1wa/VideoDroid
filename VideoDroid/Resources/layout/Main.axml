@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <VideoView
+        android:id="@+id/videoView"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content" />
+    <LinearLayout
+        android:id="@+id/controlPanel"
+        android:orientation="vertical"
+        android:visibility="visible"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content">
+        <Button
+            android:id="@+id/btnDownload"
+            android:text="Download"
+            android:enabled="true"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content" />
+        <Button
+            android:id="@+id/btnPlay"
+            android:text="Play"
+            android:enabled="false"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content" />
+        <ProgressBar
+            android:id="@+id/barProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:max="6"
+            android:progress="3" />
+    </LinearLayout>
+</RelativeLayout>
