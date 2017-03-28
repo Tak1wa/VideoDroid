@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using Android.Media;
+using Android.Views;
 
 namespace VideoDroid
 {
@@ -32,11 +34,6 @@ namespace VideoDroid
 
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
-
-            video = (VideoView)FindViewById(Resource.Id.videoView);
-
-            progressBar = (ProgressBar)FindViewById(Resource.Id.barProgress);
-            progressBar.Progress = 0;
         }
 
         public async override void OnWindowFocusChanged(bool hasFocus)
@@ -45,19 +42,18 @@ namespace VideoDroid
 
             if (hasFocus)
             {
+                progressBar = (ProgressBar)FindViewById(Resource.Id.barProgress);
                 await DownloadProcessAsync();
 
-                Toast.MakeText(this, "Download completed.", ToastLength.Long);
+                Toast.MakeText(this, "Download completed.", ToastLength.Long).Show();
                 await Task.Delay(5000);
-                progressBar.Visibility = Android.Views.ViewStates.Gone;
+                progressBar.Visibility = ViewStates.Gone;
 
                 await PlayFromLocalAsync();
             }
         }
         #endregion
 
-        //Views
-        VideoView video;
         ProgressBar progressBar;
 
         #region Donwload Process
@@ -113,16 +109,62 @@ namespace VideoDroid
         #region Play Process
 
         List<string> filePaths = new List<string>();
-
+        
         private async Task PlayFromLocalAsync()
         {
-            foreach (var filePath in filePaths)
+            InitialVideo();
+            
+            var counter = 0;
+            while(true)
             {
-                video.SetVideoPath(filePath);
-                video.Start();
-                await Task.Delay(5000);
+                if(counter == filePaths.Count - 1)
+                {
+                    counter = 0;
+                }
+                await CurrentPlayAndNextPrepare(filePaths[counter++]);
+                await Task.Delay(10000);
             }
         }
+
+        #region Play
+
+        SurfaceView videoView;
+
+        MediaPlayer prePlayer = null;
+        MediaPlayer currentPlayer = null;
+        MediaPlayer nextPlayer = null;
+
+        private void InitialVideo()
+        {
+            videoView = (SurfaceView)FindViewById(Resource.Id.videoView);
+        }
+
+        private async Task CurrentPlayAndNextPrepare(string nextMovieFile)
+        {
+            currentPlayer = nextPlayer;
+            nextPlayer = null;
+
+            if(prePlayer != null)
+            {
+                prePlayer.Stop();
+                prePlayer.Release();
+                prePlayer = null;
+            }
+
+            if(currentPlayer != null)
+            {
+                currentPlayer.SetDisplay(videoView.Holder);
+                currentPlayer.Start();
+                prePlayer = currentPlayer;
+            }
+
+            nextPlayer = new MediaPlayer();
+            await nextPlayer.SetDataSourceAsync(nextMovieFile);
+            nextPlayer.PrepareAsync();
+        }
+        
+        #endregion
+
         #endregion
 
     }
