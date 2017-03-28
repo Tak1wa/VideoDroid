@@ -17,8 +17,15 @@ namespace VideoDroid
         {
             base.OnCreate(bundle);
 
-            Window.AddFlags(Android.Views.WindowManagerFlags.Fullscreen);
+            Window.AddFlags(Android.Views.WindowManagerFlags.KeepScreenOn);
+
             RequestWindowFeature(Android.Views.WindowFeatures.NoTitle);
+
+            Window.DecorView.SystemUiVisibility =
+                (Android.Views.StatusBarVisibility)
+                    (Android.Views.SystemUiFlags.HideNavigation |
+                     Android.Views.SystemUiFlags.Fullscreen |
+                     Android.Views.SystemUiFlags.ImmersiveSticky);
 
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.Main);
