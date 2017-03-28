@@ -7,12 +7,15 @@ using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using System.Linq;
 
 namespace VideoDroid
 {
     [Activity(Label = "VideoDroid", MainLauncher = true, Icon = "@drawable/icon", ScreenOrientation = Android.Content.PM.ScreenOrientation.Landscape)]
     public class MainActivity : Activity
     {
+        #region life cycle
+
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
@@ -32,78 +35,96 @@ namespace VideoDroid
 
             video = (VideoView)FindViewById(Resource.Id.videoView);
 
-            panel = (LinearLayout)FindViewById(Resource.Id.controlPanel);
-            
-            btnDownload = (Button)FindViewById(Resource.Id.btnDownload);
-            btnDownload.Click += BtnDownload_Click;
-
-            btnPlay = (Button)FindViewById(Resource.Id.btnPlay);
-            btnPlay.Click += BtnPlay_Click;
-
             progressBar = (ProgressBar)FindViewById(Resource.Id.barProgress);
             progressBar.Progress = 0;
         }
 
-        #region Views
-        VideoView video;
-        LinearLayout panel;
-        Button btnDownload;
-        Button btnPlay;
-        ProgressBar progressBar;
+        public async override void OnWindowFocusChanged(bool hasFocus)
+        {
+            base.OnWindowFocusChanged(hasFocus);
+
+            if (hasFocus)
+            {
+                await DownloadProcessAsync();
+
+                Toast.MakeText(this, "Download completed.", ToastLength.Long);
+                await Task.Delay(5000);
+                progressBar.Visibility = Android.Views.ViewStates.Gone;
+
+                await PlayFromLocalAsync();
+            }
+        }
         #endregion
 
-        private async void BtnDownload_Click(object sender, System.EventArgs e)
-        {
-            btnDownload.Enabled = false;
-            await DownloadFileFromWeb(PATH1, "movie1.mkv");
-            await DownloadFileFromWeb(PATH2, "movie2.mlv");
-            await DownloadFileFromWeb(PATH3, "movie3.mlv");
-            await DownloadFileFromWeb(PATH4, "movie4.mlv");
-            await DownloadFileFromWeb(PATH5, "movie5.mlv");
-            await DownloadFileFromWeb(PATH6, "movie6.mlv");
+        //Views
+        VideoView video;
+        ProgressBar progressBar;
 
-            btnPlay.Enabled = true;
+        #region Donwload Process
+
+        List<string> _DownloadUrls = new List<string>
+        {
+            "https://hogehoge/hoge1.mkv",
+            "https://hogehoge/hoge2.mkv",
+            "https://hogehoge/hoge3.mkv",
+            "https://hogehoge/hoge4.mkv",
+            "https://hogehoge/hoge5.mkv",
+            "https://hogehoge/hoge6.mkv",
+        };
+
+        private async Task DownloadProcessAsync()
+        {
+            progressBar.Visibility = Android.Views.ViewStates.Visible;
+            progressBar.Max = _DownloadUrls.Count;
+            progressBar.Progress = 0;
+
+            foreach (var current in _DownloadUrls.Select((value, index) => new { index, value }))
+            {
+                var path = await DownloadFileFromWebAsync(current.value, $"movie{current.index}.mp4");
+                if(!string.IsNullOrWhiteSpace(path))
+                {
+                    filePaths.Add(path);
+                }
+                progressBar.Progress++;
+            }
         }
 
-        private async Task DownloadFileFromWeb(string url, string fileName)
+        private async Task<string> DownloadFileFromWebAsync(string url, string fileName)
         {
-            var webClient = new WebClient();
-            var folder = Path.Combine(Android.OS.Environment.ExternalStorageDirectory.AbsolutePath, Android.OS.Environment.DirectoryDownloads);
-            var filePath = Path.Combine(folder, fileName);
-            await webClient.DownloadFileTaskAsync(url, filePath);
-            progressBar.Progress += 1;
-            filePaths.Add(filePath);
+            try
+            {
+                var folder = Path.Combine(Android.OS.Environment.ExternalStorageDirectory.AbsolutePath, Android.OS.Environment.DirectoryDownloads);
+                var filePath = Path.Combine(folder, fileName);
+                if (File.Exists(filePath) == false)
+                {
+                    var webClient = new WebClient();
+                    await webClient.DownloadFileTaskAsync(url, filePath);
+                }
+                return filePath;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex);
+                return null;
+            }
         }
+        #endregion
+
+        #region Play Process
 
         List<string> filePaths = new List<string>();
-        
-        private void ControlInVisible()
-        {
-            panel.Visibility = Android.Views.ViewStates.Gone;
-        }
 
-        private async void BtnPlay_Click(object sender, System.EventArgs e)
+        private async Task PlayFromLocalAsync()
         {
-            ControlInVisible();
-            await PlayFromLocal();
-        }
-
-        private async Task PlayFromLocal()
-        {
-            foreach(var filePath in filePaths)
+            foreach (var filePath in filePaths)
             {
                 video.SetVideoPath(filePath);
                 video.Start();
-                await Task.Delay(100000);
+                await Task.Delay(5000);
             }
         }
-        
-        string PATH1 = @"https://xxxx/movie1.mkv";
-        string PATH2 = @"https://xxxx/movie2.mkv";
-        string PATH3 = @"https://xxxx/movie3.mkv";
-        string PATH4 = @"https://xxxx/movie4.mkv";
-        string PATH5 = @"https://xxxx/movie5.mkv";
-        string PATH6 = @"https://xxxx/movie6.mkv";
+        #endregion
+
     }
 }
 
